@@ -28,4 +28,8 @@ sed "s#__ENTRY__#${ENTRY}#g" /etc/nginx/pascal.conf.template > /etc/nginx/http.d
 nginx
 echo "[pascal] starting editor"
 cd /app/apps/editor
-exec bun run start -- -p 3000 -H 127.0.0.1
+# stop cleanly when the Supervisor sends SIGTERM (exit 0 instead of 143)
+trap 'nginx -s quit 2>/dev/null; kill "$EDITOR_PID" 2>/dev/null; wait "$EDITOR_PID" 2>/dev/null; exit 0' TERM INT
+bun run start -- -p 3000 -H 127.0.0.1 &
+EDITOR_PID=$!
+wait "$EDITOR_PID"

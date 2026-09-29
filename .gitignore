@@ -1,3 +1,4 @@
 upstream-src/
 docker-build-*.log
 node_modules/
+house-graph.*

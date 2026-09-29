@@ -1,0 +1,42 @@
+# Ingress delivers requests with the /api/hassio_ingress/<token> prefix already removed; the editor was
+# built with that prefix as its basePath, so put it back. Requests that still carry it (local tests) are
+# normalised to the same path.
+map $http_upgrade $connection_upgrade {
+  default upgrade;
+  ''      close;
+}
+
+server {
+  listen 8099;
+  client_max_body_size 200m;
+
+  location / {
+    rewrite ^(?:/api/hassio_ingress/[^/]+)?(/.*)?$ __ENTRY__$1 break;
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Host 127.0.0.1:3000;
+    # the scene API compares Origin with Host; the browser origin is the HA URL, so drop it
+    proxy_set_header Origin "";
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_buffering off;
+    proxy_read_timeout 3600s;
+
+    # Server-rendered <img src="/icons/..."> (next/image, optimiser off) has no basePath: add it to the
+    # public folders of the editor so the browser asks for them under the ingress path.
+    proxy_set_header Accept-Encoding "";
+    sub_filter_types text/html;
+    sub_filter_once off;
+    sub_filter 'src="/icons/' 'src="__ENTRY__/icons/';
+    sub_filter 'src="/items/' 'src="__ENTRY__/items/';
+    sub_filter 'src="/demos/' 'src="__ENTRY__/demos/';
+    sub_filter 'src="/material/' 'src="__ENTRY__/material/';
+    sub_filter 'src="/hdri/' 'src="__ENTRY__/hdri/';
+    sub_filter 'src="/audios/' 'src="__ENTRY__/audios/';
+    sub_filter 'src="/pascal' 'src="__ENTRY__/pascal';
+    sub_filter 'src="/cursor.svg' 'src="__ENTRY__/cursor.svg';
+    sub_filter 'href="/icons/' 'href="__ENTRY__/icons/';
+    sub_filter 'href="/pascal' 'href="__ENTRY__/pascal';
+  }
+}

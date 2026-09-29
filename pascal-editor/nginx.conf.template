@@ -9,6 +9,7 @@ map $http_upgrade $connection_upgrade {
 server {
   listen 8099;
   client_max_body_size 200m;
+  access_log /dev/stdout;
 
   location / {
     # The panel opens <ingress>/ ; Next would redirect that to <ingress> (no slash), which HA ingress 404s on.

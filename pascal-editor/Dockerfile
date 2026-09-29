@@ -11,7 +11,9 @@ RUN git init -q . && git remote add origin https://github.com/pascalorg/editor.g
 COPY patches /patches
 RUN node /patches/apply.mjs /app
 
-RUN bun install --frozen-lockfile
+# copyfile backend: hardlinks from bun's cache fail on some overlay filesystems (seen on a HA OS host);
+# one retry covers a transient tarball download failure.
+RUN bun install --frozen-lockfile --backend=copyfile || bun install --frozen-lockfile --backend=copyfile
 ENV PASCAL_BASE_PATH=/__PASCAL_BASE__ \
     NEXT_TELEMETRY_DISABLED=1
 RUN ./node_modules/.bin/turbo run build --filter=editor --env-mode=loose \

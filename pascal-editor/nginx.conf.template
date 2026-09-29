@@ -11,6 +11,8 @@ server {
   client_max_body_size 200m;
 
   location / {
+    # The panel opens <ingress>/ ; Next would redirect that to <ingress> (no slash), which HA ingress 404s on.
+    rewrite ^(?:/api/hassio_ingress/[^/]+)?/?$ __ENTRY__ break;
     rewrite ^(?:/api/hassio_ingress/[^/]+)?(/.*)?$ __ENTRY__$1 break;
     proxy_pass http://127.0.0.1:3000;
     proxy_http_version 1.1;
@@ -26,7 +28,6 @@ server {
     # Server-rendered <img src="/icons/..."> (next/image, optimiser off) has no basePath: add it to the
     # public folders of the editor so the browser asks for them under the ingress path.
     proxy_set_header Accept-Encoding "";
-    sub_filter_types text/html;
     sub_filter_once off;
     sub_filter 'src="/icons/' 'src="__ENTRY__/icons/';
     sub_filter 'src="/items/' 'src="__ENTRY__/items/';
